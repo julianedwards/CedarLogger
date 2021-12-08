@@ -1,4 +1,4 @@
-package encoding
+package encode
 
 type Encoding interface {
 	String() string

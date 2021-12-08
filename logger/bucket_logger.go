@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/evergreen-ci/pail"
-	"github.com/julianedwards/cedar/encoding"
+	"github.com/julianedwards/cedar/encode"
 	"github.com/julianedwards/cedar/session"
 	"github.com/mongodb/grip"
 	"github.com/mongodb/grip/level"
@@ -49,7 +49,7 @@ type BucketLoggerOptions struct {
 	Metadata interface{} `bson:"metadata" json:"metadata" yaml:"metadata"`
 	// MetadataEncoding determines the encoding format for the metadata.
 	// The default is plain text.
-	MetadataEncoding encoding.Encoding
+	MetadataEncoding encode.Encoding
 
 	// Local sender for "fallback" operations.
 	Local send.Sender `bson:"-" json:"-" yaml:"-"`
@@ -70,9 +70,10 @@ type BucketLoggerOptions struct {
 
 func (opts *BucketLoggerOptions) validate() {
 	if opts.MetadataEncoding == nil {
-		encoding, _ := encoding.GlobalRegistry.Get(encoding.TEXT)
+		encoding, _ := encode.GlobalRegistry.Get(encode.TEXT)
 		opts.MetadataEncoding = encoding
 	}
+
 	if opts.Local == nil {
 		opts.Local = send.MakeNative()
 		opts.Local.SetName("local")
