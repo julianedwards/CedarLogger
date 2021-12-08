@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/evergreen-ci/pail"
+	"github.com/julianedwards/cedar/encoding"
 	"github.com/julianedwards/cedar/session"
 	"github.com/mongodb/grip"
 	"github.com/mongodb/grip/level"
@@ -46,6 +47,9 @@ type BucketLoggerOptions struct {
 	// Metadata is used to store any additonal data alongside the logs in
 	// this bucket.
 	Metadata interface{} `bson:"metadata" json:"metadata" yaml:"metadata"`
+	// MetadataEncoding determines the encoding format for the metadata.
+	// The default is plain text.
+	MetadataEncoding encoding.Encoding
 
 	// Local sender for "fallback" operations.
 	Local send.Sender `bson:"-" json:"-" yaml:"-"`
@@ -65,6 +69,10 @@ type BucketLoggerOptions struct {
 }
 
 func (opts *BucketLoggerOptions) validate() {
+	if opts.MetadataEncoding == nil {
+		encoding, _ := encoding.GlobalRegistry.Get(encoding.TEXT)
+		opts.MetadataEncoding = encoding
+	}
 	if opts.Local == nil {
 		opts.Local = send.MakeNative()
 		opts.Local.SetName("local")
@@ -92,12 +100,12 @@ func NewBucketLoggerWithContext(ctx context.Context, sess *session.BucketSession
 	}
 
 	if opts.Metadata != nil {
-		data, err := json.Marshal(opts.Metadata)
+		data, err := opts.MetadataEncoding.Marshal(opts.Metadata)
 		if err != nil {
 			return nil, errors.Wrap(err, "marshaling metadata to JSON")
 		}
 
-		if err = bucket.Put(ctx, "metadata", bytes.NewReader(data)); err != nil {
+		if err = bucket.Put(ctx, fmt.Sprintf("metadata.%s", opts.MetadataEncoding.Extension()), bytes.NewReader(data)); err != nil {
 			return nil, errors.Wrap(err, "uploading metadata")
 		}
 	}
