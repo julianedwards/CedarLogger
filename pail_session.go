@@ -1,9 +1,10 @@
-package logger
+package cedar
 
 import (
 	"context"
 
 	"github.com/evergreen-ci/pail"
+	"github.com/julianedwards/cedar/internal"
 	"github.com/mongodb/grip"
 	"github.com/pkg/errors"
 )
@@ -11,11 +12,7 @@ import (
 const defaultS3Region = "us-east-1"
 
 type BucketSession struct {
-	bucketSession
-}
-
-type bucketSession interface {
-	create(context.Context, string) (pail.Bucket, error)
+	internal.BucketSession
 }
 
 type s3BucketSession struct {
@@ -48,11 +45,11 @@ func NewS3BucketSession(opts S3BucketOptions) (*BucketSession, error) {
 	}
 
 	return &BucketSession{
-		bucketSession: &s3BucketSession{opts: opts},
+		BucketSession: &s3BucketSession{opts: opts},
 	}, nil
 }
 
-func (s *s3BucketSession) create(ctx context.Context, prefix string) (pail.Bucket, error) {
+func (s *s3BucketSession) Create(ctx context.Context, prefix string) (pail.Bucket, error) {
 	bucket, err := pail.NewS3Bucket(pail.S3Options{
 		Name:   s.opts.Bucket,
 		Prefix: prefix,
@@ -75,11 +72,11 @@ type localBucketSession struct {
 
 func NewLocalBucketSession(bucket string) *BucketSession {
 	return &BucketSession{
-		bucketSession: &localBucketSession{bucket: bucket},
+		BucketSession: &localBucketSession{bucket: bucket},
 	}
 }
 
-func (s *localBucketSession) create(ctx context.Context, prefix string) (pail.Bucket, error) {
+func (s *localBucketSession) Create(ctx context.Context, prefix string) (pail.Bucket, error) {
 	bucket, err := pail.NewLocalBucket(pail.LocalOptions{
 		Path:   s.bucket,
 		Prefix: prefix,

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/evergreen-ci/pail"
+	"github.com/julianedwards/cedar"
 	"github.com/mongodb/grip"
 	"github.com/mongodb/grip/level"
 	"github.com/mongodb/grip/message"
@@ -34,7 +35,7 @@ type bucketLogger struct {
 	closed     bool
 
 	opts   BucketLoggerOptions
-	sess   *BucketSession
+	sess   *cedar.BucketSession
 	bucket pail.Bucket
 
 	*send.Base
@@ -78,14 +79,14 @@ func (opts *BucketLoggerOptions) validate() {
 	}
 }
 
-func NewBucketLogger(sess *BucketSession, name string, opts BucketLoggerOptions) (*bucketLogger, error) {
+func NewBucketLogger(sess *cedar.BucketSession, name string, opts BucketLoggerOptions) (*bucketLogger, error) {
 	return NewBucketLoggerWithContext(context.Background(), sess, name, opts)
 }
 
-func NewBucketLoggerWithContext(ctx context.Context, sess *BucketSession, name string, opts BucketLoggerOptions) (*bucketLogger, error) {
+func NewBucketLoggerWithContext(ctx context.Context, sess *cedar.BucketSession, name string, opts BucketLoggerOptions) (*bucketLogger, error) {
 	opts.validate()
 
-	bucket, err := sess.create(ctx, name)
+	bucket, err := sess.Create(ctx, name)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating Pail Bucket")
 	}
