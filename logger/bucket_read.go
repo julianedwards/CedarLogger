@@ -6,7 +6,7 @@ import (
 	"sort"
 
 	"github.com/evergreen-ci/pail"
-	"github.com/julianedwards/cedar"
+	"github.com/julianedwards/cedar/session"
 	"github.com/pkg/errors"
 )
 
@@ -18,7 +18,7 @@ type bucketReader struct {
 	keyIdx int
 }
 
-func NewBucketLogReadCloser(ctx context.Context, sess *cedar.BucketSession, name string) (io.ReadCloser, error) {
+func NewBucketLogReadCloser(ctx context.Context, sess *session.BucketSession, name string) (io.ReadCloser, error) {
 	bucket, err := sess.Create(ctx, name)
 	if err != nil {
 		return nil, errors.WithStack(err)
