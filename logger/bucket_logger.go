@@ -137,11 +137,7 @@ func (l *bucketLogger) Write(ctx context.Context, data []byte) error {
 	return errors.Wrap(l.bucket.Put(ctx, l.newKey(), bytes.NewReader(data)), "uploading data")
 }
 
-// TODO: Figure out how to signal that we should stop reading the log file.
-// Maybe we can set Reopen to false and once the file is deleted, we know we
-// can stop reading? If we want to enable rotating, we need to be careful about
-// this.
-func (l *bucketLogger) FollowFile(ctx context.Context, filename string) error {
+func (l *bucketLogger) FollowFile(ctx context.Context, filename string, exit chan struct{}) error {
 	t, err := follower.New(filename, follower.Config{
 		Whence: io.SeekEnd,
 		Offset: 0,
@@ -163,13 +159,15 @@ func (l *bucketLogger) FollowFile(ctx context.Context, filename string) error {
 				l.Write(ctx, buffer)
 				buffer = []byte{}
 			}
+		case <-exit:
+			break
 		case <-ctx.Done():
 			catcher.Add(ctx.Err())
 			break
 		}
 	}
-
 	catcher.Wrap(t.Err(), "following log file")
+
 	return catcher.Resolve()
 }
 

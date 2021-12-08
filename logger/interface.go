@@ -8,7 +8,7 @@ import (
 
 type Logger interface {
 	Write(context.Context, string, []byte) error
-	FollowFile(context.Context, string) error
+	FollowFile(context.Context, string, chan struct{}) error
 
 	send.Sender
 }
