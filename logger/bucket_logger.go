@@ -48,8 +48,9 @@ type BucketLoggerOptions struct {
 	// this bucket.
 	Metadata interface{} `bson:"metadata" json:"metadata" yaml:"metadata"`
 	// MetadataEncoding determines the encoding format for the metadata.
-	// The default is plain text.
-	MetadataEncoding encode.Encoding
+	// The default is plain text. The encoding type should live in the
+	// global encoding registry.
+	MetadataEncoding string
 
 	// Local sender for "fallback" operations.
 	Local send.Sender `bson:"-" json:"-" yaml:"-"`
@@ -69,9 +70,8 @@ type BucketLoggerOptions struct {
 }
 
 func (opts *BucketLoggerOptions) validate() {
-	if opts.MetadataEncoding == nil {
-		encoding, _ := encode.GlobalRegistry.Get(encode.TEXT)
-		opts.MetadataEncoding = encoding
+	if opts.MetadataEncoding == "" {
+		opts.MetadataEncoding = encode.TEXT
 	}
 
 	if opts.Local == nil {
@@ -101,12 +101,16 @@ func NewBucketLoggerWithContext(ctx context.Context, sess *session.BucketSession
 	}
 
 	if opts.Metadata != nil {
-		data, err := opts.MetadataEncoding.Marshal(opts.Metadata)
+		encoding, ok := encode.GlobalRegistry.Get(opts.MetadataEncoding)
+		if !ok {
+			return nil, errors.Errorf("unrecognized encoding '%s'", encoding)
+		}
+		data, err := encoding.Marshal(opts.Metadata)
 		if err != nil {
 			return nil, errors.Wrap(err, "marshaling metadata to JSON")
 		}
 
-		if err = bucket.Put(ctx, fmt.Sprintf("metadata.%s", opts.MetadataEncoding.Extension()), bytes.NewReader(data)); err != nil {
+		if err = bucket.Put(ctx, fmt.Sprintf("metadata.%s", encoding.Extension()), bytes.NewReader(data)); err != nil {
 			return nil, errors.Wrap(err, "uploading metadata")
 		}
 	}
