@@ -2,12 +2,14 @@ package encode
 
 import "sync"
 
-var GlobalRegistry = &encodingRegistry{
+var globalRegistry = &encodingRegistry{
 	registry: map[string]Encoding{
 		TEXT: &textEncoding{},
 		JSON: &jsonEncoding{},
 	},
 }
+
+func GetGlobalRegistry() *encodingRegistry { return globalRegistry }
 
 type encodingRegistry struct {
 	mu       sync.RWMutex

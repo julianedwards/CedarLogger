@@ -23,6 +23,7 @@ func (e *textEncoding) Marshal(v interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// TODO: should this even be implemented for plain text?
 func (e *textEncoding) Unmarshal(data []byte, v interface{}) error {
 	switch s := v.(type) {
 	case *string:

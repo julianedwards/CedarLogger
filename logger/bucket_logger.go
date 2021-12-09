@@ -48,8 +48,8 @@ type BucketLoggerOptions struct {
 	// this bucket.
 	Metadata interface{} `bson:"metadata" json:"metadata" yaml:"metadata"`
 	// MetadataEncoding determines the encoding format for the metadata.
-	// The default is plain text. The encoding type should live in the
-	// global encoding registry.
+	// The default is encode.TEXT (plain text). The encoding type should
+	// live in the global encoding registry.
 	MetadataEncoding string
 
 	// Local sender for "fallback" operations.
@@ -101,7 +101,7 @@ func NewBucketLoggerWithContext(ctx context.Context, sess *session.BucketSession
 	}
 
 	if opts.Metadata != nil {
-		encoding, ok := encode.GlobalRegistry.Get(opts.MetadataEncoding)
+		encoding, ok := encode.GetGlobalRegistry().Get(opts.MetadataEncoding)
 		if !ok {
 			return nil, errors.Errorf("unrecognized encoding '%s'", encoding)
 		}
