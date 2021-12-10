@@ -12,6 +12,11 @@ type Logger interface {
 	Write(context.Context, options.Write) error
 	WriteBytes(context.Context, options.WriteBytes) error
 	FollowFile(context.Context, options.FollowFile) error
-	NewReadCloser(context.Context, options.Read) (io.ReadCloser, error)
-	NewReverseReadCloser(context.Context, options.Read) (io.ReadCloser, error)
+	NewReadCloser(context.Context, options.Read) (ReadCloser, error)
+	NewReverseReadCloser(context.Context, options.Read) (ReadCloser, error)
+}
+
+type ReadCloser interface {
+	ReadPage() ([]byte, error)
+	io.ReadCloser
 }

@@ -217,10 +217,25 @@ type bucketReader struct {
 	keyIdx int
 }
 
+func (r *bucketReader) ReadPage() ([]byte, error) {
+	if r.keyIdx == 0 {
+		if err := r.getNextChunk(); err != nil {
+			return 0, err
+		}
+	}
+
+	if r.reader == nil {
+		return 0, io.EOF
+	}
+
+	data, err := io.ReadAll(r.reader)
+	return data, errors.Wrap(err, "reading next log page")
+}
+
 func (r *bucketReader) Read(p []byte) (int, error) {
 	if r.keyIdx == 0 {
 		if err := r.getNextChunk(); err != nil {
-			return 0, errors.WithStack(err)
+			return 0, err
 		}
 	}
 
