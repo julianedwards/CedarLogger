@@ -220,12 +220,12 @@ type bucketReader struct {
 func (r *bucketReader) ReadPage() ([]byte, error) {
 	if r.keyIdx == 0 {
 		if err := r.getNextChunk(); err != nil {
-			return 0, err
+			return nil, err
 		}
 	}
 
 	if r.reader == nil {
-		return 0, io.EOF
+		return nil, io.EOF
 	}
 
 	data, err := io.ReadAll(r.reader)
