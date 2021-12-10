@@ -23,17 +23,17 @@ type sender struct {
 	timer      *time.Timer
 	closed     bool
 
-	opts   options.Sender
-	logger Logger
+	opts options.Sender
+	l    Logger
 
 	*send.Base
 }
 
-func NewSender(ctx context.Context, logger Logger, opts options.Sender) (*sender, error) {
+func NewSender(ctx context.Context, l Logger, opts options.Sender) (*sender, error) {
 	s := &sender{
-		opts:   opts,
-		logger: logger,
-		Base:   send.NewBase(opts.Key),
+		opts: opts,
+		l:    l,
+		Base: send.NewBase(opts.Key),
 	}
 
 	if err := s.SetErrorHandler(send.ErrorHandlerFromSender(opts.Local)); err != nil {
@@ -150,7 +150,7 @@ func (s *sender) timedFlush() {
 }
 
 func (s *sender) flush(ctx context.Context) error {
-	err := s.logger.Write(s.ctx, options.Write{
+	err := s.l.Write(s.ctx, options.Write{
 		Key:      s.opts.Key,
 		Data:     s.buffer,
 		Encoding: encode.JSON,
