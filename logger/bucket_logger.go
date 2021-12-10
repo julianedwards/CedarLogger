@@ -144,15 +144,15 @@ func (l *bucketLogger) FollowFile(ctx context.Context, opts options.FollowFile) 
 	return catcher.Resolve()
 }
 
-func (l *bucketLogger) NewReadCloser(ctx context.Context, opts options.Read) (io.ReadCloser, error) {
+func (l *bucketLogger) NewReadCloser(ctx context.Context, opts options.Read) (*bucketReader, error) {
 	return l.newReadCloser(ctx, opts, false)
 }
 
-func (l *bucketLogger) NewReverseReadCloser(ctx context.Context, opts options.Read) (io.ReadCloser, error) {
+func (l *bucketLogger) NewReverseReadCloser(ctx context.Context, opts options.Read) (*bucketReader, error) {
 	return l.newReadCloser(ctx, opts, true)
 }
 
-func (l *bucketLogger) newReadCloser(ctx context.Context, opts options.Read, reverse bool) (io.ReadCloser, error) {
+func (l *bucketLogger) newReadCloser(ctx context.Context, opts options.Read, reverse bool) (*bucketReader, error) {
 	if err := opts.Validate(); err != nil {
 		return nil, err
 	}
