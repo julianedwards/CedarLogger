@@ -50,10 +50,10 @@ func NewSender(ctx context.Context, l Logger, opts options.Sender) (*sender, err
 	s.ctx = ctx
 	s.cancel = cancel
 
-	if opts.MaxBufferSize <= 0 {
-		opts.MaxBufferSize = defaultMaxBufferSize
+	if s.opts.MaxBufferSize <= 0 {
+		s.opts.MaxBufferSize = defaultMaxBufferSize
 	}
-	if opts.FlushInterval > 0 {
+	if s.opts.FlushInterval > 0 {
 		go s.timedFlush()
 	}
 
