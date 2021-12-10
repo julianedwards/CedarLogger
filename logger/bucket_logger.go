@@ -145,6 +145,14 @@ func (l *bucketLogger) FollowFile(ctx context.Context, opts options.FollowFile) 
 }
 
 func (l *bucketLogger) NewReadCloser(ctx context.Context, opts options.Read) (io.ReadCloser, error) {
+	return l.newReadCloser(ctx, opts, false)
+}
+
+func (l *bucketLogger) NewReverseReadCloser(ctx context.Context, opts options.Read) (io.ReadCloser, error) {
+	return l.newReadCloser(ctx, opts, true)
+}
+
+func (l *bucketLogger) newReadCloser(ctx context.Context, opts options.Read, reverse bool) (io.ReadCloser, error) {
 	if err := opts.Validate(); err != nil {
 		return nil, err
 	}
@@ -155,7 +163,7 @@ func (l *bucketLogger) NewReadCloser(ctx context.Context, opts options.Read) (io
 	}
 
 	r := &bucketReader{ctx: ctx, bucket: bucket}
-	return r, r.getAndSortKeys(opts.Key)
+	return r, r.getAndSortKeys(opts.Key, reverse)
 }
 
 func (l *bucketLogger) encode(data interface{}, prefix, encoding string) (string, []byte, error) {
@@ -247,7 +255,7 @@ func (r *bucketReader) Close() error {
 	return errors.WithStack(r.reader.Close())
 }
 
-func (r *bucketReader) getAndSortKeys(prefix string) error {
+func (r *bucketReader) getAndSortKeys(prefix string, reverse bool) error {
 	it, err := r.bucket.List(r.ctx, prefix)
 	if err != nil {
 		return errors.Wrap(err, "listing log chunk keys")
@@ -260,7 +268,11 @@ func (r *bucketReader) getAndSortKeys(prefix string) error {
 		return errors.Wrap(err, "iterating log chunk keys")
 	}
 
-	sort.Strings(r.keys)
+	var sorter sort.Interface = sort.StringSlice(r.keys)
+	if reverse {
+		sorter = sort.Reverse(sorter)
+	}
+	sort.Sort(sorter)
 
 	return nil
 }
