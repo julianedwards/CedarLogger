@@ -5,6 +5,7 @@ import (
 )
 
 type AddMetadata struct {
+	Key      string
 	Data     interface{}
 	Encoding string
 }

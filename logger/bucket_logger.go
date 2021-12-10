@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 	"sync"
 	"time"
 
@@ -53,7 +54,7 @@ func (l *bucketLogger) AddMetadata(ctx context.Context, opts options.AddMetadata
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	keyWithExt, byteData, err := l.encode(opts.Data, "metadata", opts.Encoding)
+	keyWithExt, byteData, err := l.encode(opts.Data, opts.Key, opts.Encoding)
 	if err != nil {
 		return err
 	}
@@ -143,6 +144,20 @@ func (l *bucketLogger) FollowFile(ctx context.Context, opts options.FollowFile) 
 	return catcher.Resolve()
 }
 
+func (l *bucketLogger) NewReadCloser(ctx context.Context, opts options.Read) (io.ReadCloser, error) {
+	if err := opts.Validate(); err != nil {
+		return nil, err
+	}
+
+	bucket := l.logsBucket
+	if opts.Metadata {
+		bucket = l.metaBucket
+	}
+
+	r := &bucketReader{ctx: ctx, bucket: bucket}
+	return r, r.getAndSortKeys(opts.Key)
+}
+
 func (l *bucketLogger) encode(data interface{}, prefix, encoding string) (string, []byte, error) {
 	if prefix == "" {
 		return "", nil, errors.New("must provide a key prefix")
@@ -184,4 +199,89 @@ func (l *bucketLogger) newKey(prefix, ext string) string {
 	}
 
 	return key
+}
+
+type bucketReader struct {
+	ctx    context.Context
+	reader io.ReadCloser
+	bucket pail.Bucket
+	keys   []string
+	keyIdx int
+}
+
+func (r *bucketReader) Read(p []byte) (int, error) {
+	if r.keyIdx == 0 {
+		if err := r.getNextChunk(); err != nil {
+			return 0, errors.WithStack(err)
+		}
+	}
+
+	if r.reader == nil {
+		return 0, io.EOF
+	}
+
+	var (
+		n      int
+		offset int
+		err    error
+	)
+	for offset < len(p) {
+		n, err = r.reader.Read(p[offset:])
+		offset += n
+		if err == io.EOF {
+			err = r.getNextChunk()
+		}
+		if err != nil {
+			break
+		}
+	}
+
+	return offset, err
+}
+
+func (r *bucketReader) Close() error {
+	if r.reader == nil {
+		return nil
+	}
+
+	return errors.WithStack(r.reader.Close())
+}
+
+func (r *bucketReader) getAndSortKeys(prefix string) error {
+	it, err := r.bucket.List(r.ctx, prefix)
+	if err != nil {
+		return errors.Wrap(err, "listing log chunk keys")
+	}
+
+	for it.Next(r.ctx) {
+		r.keys = append(r.keys, it.Item().Name())
+	}
+	if err = it.Err(); err != nil {
+		return errors.Wrap(err, "iterating log chunk keys")
+	}
+
+	sort.Strings(r.keys)
+
+	return nil
+}
+
+func (r *bucketReader) getNextChunk() error {
+	if err := r.reader.Close(); err != nil {
+		return errors.Wrap(err, "closing previous ReadCloser")
+	}
+	r.reader = nil
+
+	if r.keyIdx == len(r.keys) {
+		return nil
+	}
+
+	reader, err := r.bucket.Get(r.ctx, r.keys[r.keyIdx])
+	if err != nil {
+		return errors.Wrap(err, "getting next log chunk")
+	}
+
+	r.reader = reader
+	r.keyIdx++
+
+	return nil
 }

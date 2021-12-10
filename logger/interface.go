@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"io"
 
 	"github.com/julianedwards/cedar/options"
 )
@@ -11,4 +12,5 @@ type Logger interface {
 	Write(context.Context, options.Write) error
 	WriteBytes(context.Context, options.WriteBytes) error
 	FollowFile(context.Context, options.FollowFile) error
+	NewReadCloser(context.Context, options.Read) (io.ReadCloser, error)
 }
