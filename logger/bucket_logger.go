@@ -293,7 +293,7 @@ func (r *bucketReader) getAndSortKeys(prefix string, reverse bool) error {
 }
 
 func (r *bucketReader) getNextChunk() error {
-	if err := r.reader.Close(); err != nil {
+	if err := r.Close(); err != nil {
 		return errors.Wrap(err, "closing previous ReadCloser")
 	}
 	r.reader = nil
