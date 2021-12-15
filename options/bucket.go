@@ -24,15 +24,17 @@ func (t PailType) validate() error {
 }
 
 type Bucket struct {
-	Type PailType
-	Name string
-	S3   *S3Bucket
+	Type   PailType
+	Name   string
+	Prefix string
+	S3     *S3Bucket
 }
 
 func (o *Bucket) Validate() error {
 	catcher := grip.NewBasicCatcher()
 	catcher.Add(o.Type.validate())
 	catcher.NewWhen(o.Name == "", "must specify bucket name")
+	catcher.NewWhen(o.Prefix == "", "must specify prefix name")
 
 	switch o.Type {
 	case PailS3:

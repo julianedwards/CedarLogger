@@ -31,11 +31,11 @@ type bucketLogger struct {
 }
 
 func NewBucketLogger(ctx context.Context, opts options.Bucket) (*bucketLogger, error) {
-	metaBucket, err := internal.CreateBucket(ctx, "metadata", opts)
+	metaBucket, err := internal.CreateBucket(ctx, opts.Prefix+"/"+"metadata", opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating metadata bucket")
 	}
-	logsBucket, err := internal.CreateBucket(ctx, "logs", opts)
+	logsBucket, err := internal.CreateBucket(ctx, opts.Prefix+"/"+"logs", opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating logs bucket")
 	}
